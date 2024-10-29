@@ -1,0 +1,32 @@
+apt install ufw -y;
+sudo ufw deny 22;
+sudo ufw enable;
+
+sudo apt update -y;
+sudo apt upgrade -y;
+
+mkdir /home/$USER/DEVELOPPMENT
+mkdir /home/$USER/DEVELOPPMENT/debianwebsiteimages;
+
+wget --directory-prefix=/home/$USER/DEVELOPPMENT/debianwebsiteimages/ https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/$(wget -qO - https://cdimage.debian.org/cdimage/release/current/amd64/iso-cd/SHA512SUMS|grep "netinst.iso"|cut -d " " -f 3|sed -n '1p');
+wget --directory-prefix=/home/$USER/DEVELOPPMENT/debianwebsiteimages/ https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/SHA512SUMS.sign;
+wget --directory-prefix=/home/$USER/DEVELOPPMENT/debianwebsiteimages/ https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/SHA512SUMS;
+
+gpg --keyserver keyring.debian.org --recv DF9B9C49EAA9298432589D76DA87E80D6294BE9B;
+gpg --verify /home/$USER/DEVELOPPMENT/debianwebsiteimages/SHA512SUMS.sign /home/$USER/DEVELOPPMENT/debianwebsiteimages/SHA512SUMS
+
+debianCurrentStable= wget -O - https://cdimage.debian.org/cdimage/release/current/amd64/iso-cd/SHA512SUMS|grep "netinst.iso"|cut -d " " -f 3|sed -n '1p';
+debianPageSha512= wget -O - https://cdimage.debian.org/cdimage/release/current/amd64/iso-cd/SHA512SUMS|grep "netinst.iso"|cut -d " " -f 1|sed -n '1p';
+#echo ${debianPageSha512}
+
+sed -n '1p' /home/$USER/DEVELOPPMENT/debianwebsiteimages/SHA512SUMS > /home/$USER/DEVELOPPMENT/debianwebsiteimages/SHA512SUMShort;
+mv /home/$USER/DEVELOPPMENT/debianwebsiteimages/SHA512SUMShort /home/$USER/DEVELOPPMENT/debianwebsiteimages/SHA512SUMS;
+cd /home/$USER/DEVELOPPMENT/debianwebsiteimages/ && sha512sum -c SHA512SUMS
+cd ../..
+rm /home/$USER/DEVELOPPMENT/debianwebsiteimages/SHA512SUMS;
+rm /home/$USER/DEVELOPPMENT/debianwebsiteimages/SHA512SUMS.sign;
+rm /home/$USER/DEVELOPPMENT/debianwebsiteimages/*.logs;
+rm /home/$USER/DEVELOPPMENT/debianwebsiteimages/SHA512SUMShort;
+chmod 777 -R /home/$USER/DEVELOPPMENT/debianwebsiteimages
+mdebianCurrentStable= wget -O - https://cdimage.debian.org/cdimage/release/current/amd64/iso-cd/SHA512SUMS|grep "netinst.iso"|cut -d " " -f 3|sed -n '1p';
+mv /home/$USER/DEVELOPPMENT/debianwebsiteimages/*.iso /home/$USER/DEVELOPPMENT/debianwebsiteimages/$(date "+%F-%H-%M-%S")_verified_Debian_netinst.ISO
