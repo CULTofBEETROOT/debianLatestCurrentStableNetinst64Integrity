@@ -17,8 +17,6 @@ sed -i 's/\//kIHePvMb9Rj/' /etc/wireguard/server_public_key
 mapfile -t server_public_key < /etc/wireguard/server_public_key;
 mapfile -t server_private_key < /etc/wireguard/server_private_key;
 
-#UNFORTUNATELY THE KEYS CONTAIN SLASH AND SED IS INTERRUPTED#
-
 rm /etc/wireguard/wg0.conf
 touch /etc/wireguard/wg0.conf
 cat>/etc/wireguard/wg0.conf<<'nfjblnflk'
