@@ -1,0 +1,111 @@
+#Step 1 - Installation
+
+#WireGuard is in the standard repositories of all the major distributions. The Debian 11 server that I am using to write this guide the installation command is simply:
+
+apt update
+apt install wireguard
+reboot
+
+#The reboot is required because WireGuard is a kernel module that needs to get loaded into the kernel with a reboot.
+#Step 2 - Configure the server
+
+
+#Now, you need to generate the server’s public and private keys. Open a new terminal to your server and run the following command to generate the private key. 
+#This command will print the private key and also save it into a file at /etc/wireguard/server_private_key. An example public key output is also shown:
+
+wg genkey | tee /etc/wireguard/server_private_key
+
+#Next, use that private key to generate the public key, again I have shown the command with an example public key:
+
+cat "/etc/wireguard/server_private_key" | wg pubkey | tee /etc/wireguard/server_public_key
+
+#This will print the server’s public key to the terminal and also write it to a file at /etc/wireguard/server_public_key as you will need it later.
+#You now have everything to complete the [Interface] section. Using the above information it will look like this:
+
+
+mapfile -t server_public_key < /etc/wireguard/server_public_key;
+mapfile -t server_private_key < /etc/wireguard/server_private_key;
+
+#The [Interface] section is the server configuration. Later we will add a [Peer] after we have created the first client configuration.
+#The iptables commands are required to make sure your data is routed correctly from the Wireguard interface to your server’s public network interface.
+#You can choose any private IP address you want, I will go with 10.0.0.1/24 which gives you 255 IPs from 10.0.0.1 - 10.0.0.255 and I’m going to stick with the standard WireGuard port of 51820.
+#The installation will create an empty directory at /etc/wireguard. First, move into that directory:
+#server configuration
+
+cat>/etc/wireguard/wg0.conf<<'nfjblnflk'
+[Interface]
+Address = 10.0.0.1/24
+ListenPort = 51820
+PrivateKey = SERVER_PRIVATE_KEY
+PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+nfjblnflk
+sed -i "s/SERVER_PRIVATE_KEY/${server_private_key}/g" /etc/wireguard/wg0.conf
+
+#Save and exit the editor.
+
+
+
+
+###########################Step 4 - Configure a Client###############################
+#First, create the directory to store all your client configuration files:
+
+mkdir /etc/wireguard/clients
+
+wg genkey | tee /etc/wireguard/clients/client_private_key
+wg genkey | tee /etc/wireguard/clients/client_preshared_key
+cat "/etc/wireguard/clients/client_private_key" | wg pubkey | tee /etc/wireguard/clients/client_public_key
+mapfile -t client_public_key < /etc/wireguard/clients/client_public_key;
+mapfile -t client_private_key < /etc/wireguard/clients/client_private_key;
+
+#The WireGuard client will load any file that ends in .conf so you can give them descriptive names. 
+#My first client is going to be Jane’s phone so I will call it lpt.conf. Open this with an editor:
+
+cat>/etc/wireguard/clients/lpt.conf<<'xfghljvhgf'
+#This is the template for Jane’s client:
+[Interface]
+Address = 10.0.0.2/24
+ListenPort = 51820
+PrivateKey = CLIENT_PRIVATE_KEY
+PublicKey = CLIENT_PUBLIC_KEY
+DNS = 1.1.1.1
+
+[Peer] 
+PublicKey = SERVER_PUBIC_KEY
+PresharedKey = CLIENT_PRESHARED_KEY
+AllowedIPs = 0.0.0.0/0
+Endpoint = 1.2.3.4:51820
+xfghljvhgf
+
+sed -i "s/CLIENT_PRIVATE_KEY/${client_private_key}/g" /etc/wireguard/clients/lpt.conf
+sed -i "s/CLIENT_PRESHARED_KEY/${client_preshared_key}/g" /etc/wireguard/clients/lpt.conf
+sed -i "s/CLIENT_PUBLIC_KEY/${client_public_key}/g" /etc/wireguard/clients/lpt.conf
+sed -i "s/SERVER_PUBLIC_KEY/${server_public_key}/g" /etc/wireguard/clients/lpt.conf
+
+#The Address IP is one of the IPs from the range you have used. I will set this to 10.0.0.2. The DNS line is optional and will be used as the DNS resolver for this client. 
+#I like to use the Cloudflare public resolver as it is fast and private. This is located at 1.1.1.1.
+
+#Step 5 - Add the client to the server configuration
+#First, open the WireGuard server config file again:
+
+sed -n '/^\[Peer\]/,/^AllowedIPs = 0.0.0.0\/0/p' /etc/wireguard/clients/lpt.conf >> /etc/wireguard/wg0.conf
+sed -i 's/AllowedIPs = 0.0.0.0\/0/AllowedIPs = 10.0.0.2\/32/' /etc/wireguard/wg0.conf
+
+#Step 6 - Start WireGuard and enable it to start on boot
+#You will usually want WireGuard to start automatically when your server boots. 
+#Do this with systemd. First, enable the Wireguard service to start on boot:
+
+systemctl enable wg-quick@wg0.service
+
+#output:  Created symlink /etc/systemd/system/multi-user.target.wants/wg-quick@wg0.service → /lib/systemd/system/wg-quick@.service.
+
+#Then you can start and stop WireGuard with the following commands:
+
+systemctl start wg-quick@wg0.service
+
+#to stop:  systemctl stop wg-quick@wg0.service
+#You should be able to start WireGuard now using the start command above.
+#Step 5 - Connect the client
+#Get a copy of the client configuration file e.g.: /etc/wireguard/clients/lpt.conf 
+#to their device open the WireGuard application on the device, create a new tunnel, and point it to this file. 
+#They will then connect and all the data from that device will travel through your WireGuard VPN to your server.
