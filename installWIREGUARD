@@ -1,14 +1,12 @@
 
 ##run this comment PRIOR
 #apt update
-#apt install wireguard
+#apt install -y wireguard
 #reboot   #ONLY ONCE OBVIOUSLY#
-
 
 umask 077
 echo $(curl ifconfig.me) > /root/scripts/uplic.txt
 mapfile -t server_public_ip < /root/scripts/uplic.txt;
-
 
 wg genkey | tee /etc/wireguard/server_private_key
 cat "/etc/wireguard/server_private_key" | wg pubkey | tee /etc/wireguard/server_public_key
@@ -35,12 +33,22 @@ mkdir /etc/wireguard/clients
 touch /etc/wireguard/clients/client_private_key
 touch /etc/wireguard/clients/client_preshared_key
 touch /etc/wireguard/clients/client_public_key
-wg genkey | tee /etc/wireguard/clients/client_private_key
-wg genkey | tee /etc/wireguard/clients/client_preshared_key
-sed -i 's/\//kIHePvMb9Rj/' /etc/wireguard/clients/client_preshared_key
 
-cat "/etc/wireguard/clients/client_private_key" | wg pubkey | tee /etc/wireguard/clients/client_public_key
-sed -i 's/\//kIHePvMb9Rj/' /etc/wireguard/clients/client_public_key
+echo "******************************************************************************************************************************"
+echo "please copy-paste this in your client / local linux terminal:                      you've got 60 seconds, counting!"
+echo "apt update && apt install -y wireguard && mkdir /etc/wireguard/clients"
+echo "wg genkey | tee /etc/wireguard/clients/client_private_key;"
+echo "wg genkey | tee /etc/wireguard/clients/client_preshared_key;"
+echo "sed -i 's/\//kIHe\/PvMb9Rj/' /etc/wireguard/clients/client_preshared_key;"
+echo 'cat "/etc/wireguard/clients/client_private_key" | wg pubkey | tee /etc/wireguard/clients/client_public_key'
+echo "sed -i 's/\//kIHe\/PvMb9Rj/' /etc/wireguard/clients/client_public_key;"
+echo "below you should specify your remote server's specifics:" 
+echo "scp -P 58134 /etc/wireguard/clients/client_public_key root@${server_public_ip}:/etc/wireguard/clients/client_public_key;"
+echo "scp -P 58134 /etc/wireguard/clients/client_preshared_key root@${server_public_ip}:/etc/wireguard/clients/client_preshared_key;"
+echo "******************************************************************************************************************************"
+
+sleep 90s;
+
 mapfile -t client_public_key < /etc/wireguard/clients/client_public_key;
 mapfile -t client_private_key < /etc/wireguard/clients/client_private_key;
 mapfile -t client_preshared_key < /etc/wireguard/clients/client_preshared_key;
@@ -64,7 +72,8 @@ sed -i "s/CLIENT_PRESHARED_KEY/${client_preshared_key}/g" /etc/wireguard/clients
 sed -i "s/CLIENT_PUBLIC_KEY/${client_public_key}/g" /etc/wireguard/clients/lpt.conf
 sed -i "s/SERVER_PUBLIC_KEY/${server_public_key}/g" /etc/wireguard/clients/lpt.conf
 sed -i "s/SERVER_PUBLIC_IP/${server_public_ip}/g" /etc/wireguard/clients/lpt.conf
-sed -i 's/kIHePvMb9Rj/\//' /etc/wireguard/clients/lpt.conf
+sed -i 's/kIHePvMb9Rj/\//' /etc/wireguard/clients/lpt.conf   
+sed -i 's/kIHe\/PvMb9Rj/\//' /etc/wireguard/clients/lpt.conf 
 sed -n '/^\[Peer\]/,/^AllowedIPs = 0.0.0.0\/0/p' /etc/wireguard/clients/lpt.conf >> /etc/wireguard/wg0.conf
 sed -i 's/AllowedIPs = 0.0.0.0\/0/AllowedIPs = 10.0.0.2\/32/' /etc/wireguard/wg0.conf
 
@@ -76,8 +85,6 @@ rm /root/scripts/uplic.txt
 
 systemctl enable wg-quick@wg0.service
 systemctl start wg-quick@wg0.service
-echo "*********************************************************************************"
-echo "Get a copy of the client configuration file e.g.: /etc/wireguard/clients/lpt.conf"
-echo "    " 
+echo "Get a copy of the client configuration file e.g.: cat /etc/wireguard/clients/lpt.conf" 
 echo "to their device open the WireGuard application on the device, create a new tunnel, and point it to this file." 
 echo "They will then connect and all the data from that device will travel through your WireGuard VPN to your server."
