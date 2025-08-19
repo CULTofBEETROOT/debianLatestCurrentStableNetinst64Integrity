@@ -1,0 +1,20 @@
+#!/bin/bash
+
+apt update 
+apt list --upgradable 
+apt upgrade -y 
+apt autoremove 
+apt clean 
+sed -i 's/bookworm/trixie/g' /etc/apt/sources.list.d/tor.list
+sed -i 's/bookworm/trixie/g' /etc/apt/sources.list.d/sources.list
+sed -i 's/bookworm/trixie/g' /etc/apt/sources.list.d/mullvad.list
+sed -i 's/bookworm/trixie/g' /etc/apt/sources.list.d/mozilla.list
+sed -i 's/bookworm/trixie/g' /etc/apt/sources.list.d/signal-xenial.list
+apt update 57  apt upgrade --without-new-pkgs -y
+apt full-upgrade -y
+echo "system will reboot now, re-run this bash script upon start to complete process"
+sudo reboot
+apt clean 
+apt autoremove 
+apt modernize-sources
+lsb_release -a
